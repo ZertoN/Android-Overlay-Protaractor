@@ -14,46 +14,26 @@ import android.view.View.OnTouchListener
 import android.view.WindowManager
 import android.widget.ImageView
 import androidx.core.content.res.ResourcesCompat
+import kotlin.math.abs
 
-class OverlayShowingService : Service(), OnTouchListener, View.OnClickListener {
+class OverlayShowingService : Service(), OnTouchListener {
+
+    private var mode = NONE
+
+    private lateinit var wm: WindowManager
+
+
+
     private lateinit var closeView: ImageView
     private lateinit var imageView: ImageView
+
     private var offsetX = 0f
     private var offsetY = 0f
     private var originalXPos = 0
     private var originalYPos = 0
-    private val scalediff = 0f
-    private var oldDist = 1f
-    private var mode = NONE
-    private lateinit var wm: WindowManager
-    
-    override fun onBind(intent: Intent): IBinder? {
-        return null
-    }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onCreate() {
-        super.onCreate()
-        wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        imageView = ImageView(this)
-        imageView.setOnTouchListener(this)
-        imageView.setOnClickListener(this)
-        imageView.adjustViewBounds = true
-        imageView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.protaractor, null))
-        val params = layoutParams
-        params.gravity = Gravity.START or Gravity.TOP
-        params.x = dpToPx(48)
-        params.y = dpToPx(48)
-        wm.addView(imageView, params)
-        closeView = ImageView(this)
-        closeView.adjustViewBounds = true
-        closeView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.ic_close, null))
-        closeView.setOnClickListener { v: View? -> stopSelf() }
-        wm.addView(closeView, params)
-    }
 
-    private val layoutParams: WindowManager.LayoutParams
-        private get() = WindowManager.LayoutParams(
+    private val layoutParams: WindowManager.LayoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
@@ -64,6 +44,36 @@ class OverlayShowingService : Service(), OnTouchListener, View.OnClickListener {
                         WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR or
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT)
+
+    override fun onBind(intent: Intent): IBinder? {
+        return null
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onCreate() {
+        super.onCreate()
+
+        wm = getSystemService(WINDOW_SERVICE) as WindowManager
+
+        imageView = ImageView(this)
+        imageView.setOnTouchListener(this)
+        imageView.adjustViewBounds = true
+        imageView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.protaractor, null))
+
+        val params = layoutParams
+        params.gravity = Gravity.START or Gravity.TOP
+        params.x = dpToPx(48)
+        params.y = dpToPx(48)
+
+        wm.addView(imageView, params)
+
+        closeView = ImageView(this)
+        closeView.adjustViewBounds = true
+        closeView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.ic_close, null))
+        closeView.setOnClickListener { stopSelf() }
+        wm.addView(closeView, params)
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -86,12 +96,7 @@ class OverlayShowingService : Service(), OnTouchListener, View.OnClickListener {
                 offsetX = originalXPos - x
                 offsetY = originalYPos - y
             }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                oldDist = spacing(event);
-                if (oldDist > 10f) {
-                    mode = ZOOM;
-                }
-            }
+
             MotionEvent.ACTION_MOVE -> {
                 val topLeftLocationOnScreen = IntArray(2)
                 closeView.getLocationOnScreen(topLeftLocationOnScreen)
@@ -102,7 +107,7 @@ class OverlayShowingService : Service(), OnTouchListener, View.OnClickListener {
                 val params = imageView.layoutParams as WindowManager.LayoutParams
                 val newX = (offsetX + x).toInt()
                 val newY = (offsetY + y).toInt()
-                if (Math.abs(newX - originalXPos) < 1 && Math.abs(newY - originalYPos) < 1 && mode == NONE) {
+                if (abs(newX - originalXPos) < 1 && abs(newY - originalYPos) < 1 && mode == NONE) {
                     return false
                 }
                 params.x = newX - topLeftLocationOnScreen[0]
@@ -119,24 +124,14 @@ class OverlayShowingService : Service(), OnTouchListener, View.OnClickListener {
         return false
     }
 
-    private fun spacing(event: MotionEvent): Float {
-        val x = event.getX(0) - event.getX(1)
-        val y = event.getY(0) - event.getY(1)
-        return Math.sqrt((x * x + y * y).toDouble()).toFloat()
-    }
 
     private fun dpToPx(dp: Int): Int {
         val displayMetrics = resources.displayMetrics
         return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT))
     }
 
-    override fun onClick(v: View) {
-//        Toast.makeText?(this, "Overlay button click event", Toast.LENGTH_SHORT).show();
-    }
-
     companion object {
         private const val NONE = 0
         private const val DRAG = 1
-        private const val ZOOM = 2
     }
 }
