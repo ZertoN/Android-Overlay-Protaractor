@@ -23,7 +23,7 @@ class OverlayShowingService : Service(), OnTouchListener {
     private lateinit var wm: WindowManager
 
 
-
+    private lateinit var hideView: ImageView
     private lateinit var closeView: ImageView
     private lateinit var imageView: ImageView
 
@@ -34,16 +34,17 @@ class OverlayShowingService : Service(), OnTouchListener {
 
 
     private val layoutParams: WindowManager.LayoutParams = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR or
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                PixelFormat.TRANSLUCENT)
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_FULLSCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+        PixelFormat.TRANSLUCENT
+    )
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -58,7 +59,13 @@ class OverlayShowingService : Service(), OnTouchListener {
         imageView = ImageView(this)
         imageView.setOnTouchListener(this)
         imageView.adjustViewBounds = true
-        imageView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.protaractor, null))
+        imageView.setImageDrawable(
+            ResourcesCompat.getDrawable(
+                resources,
+                R.drawable.protaractor,
+                null
+            )
+        )
 
         val params = layoutParams
         params.gravity = Gravity.START or Gravity.TOP
@@ -69,16 +76,41 @@ class OverlayShowingService : Service(), OnTouchListener {
 
         closeView = ImageView(this)
         closeView.adjustViewBounds = true
-        closeView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.ic_close, null))
+        closeView.setImageDrawable(
+            ResourcesCompat.getDrawable(
+                resources,
+                R.drawable.ic_close,
+                null
+            )
+        )
         closeView.setOnClickListener { stopSelf() }
         wm.addView(closeView, params)
+
+        val visLP = WindowManager.LayoutParams()
+        visLP.copyFrom(params)
+
+        visLP.y = dpToPx(96)
+
+        hideView = ImageView(this)
+        hideView.setImageDrawable(
+            ResourcesCompat.getDrawable(
+                resources,
+                R.drawable.ic_viibility,
+                null
+            )
+        )
+        hideView.setOnClickListener {
+            if (imageView.visibility == View.VISIBLE) imageView.visibility = View.GONE
+            else imageView.visibility = View.VISIBLE
+        }
+        wm.addView(hideView, visLP)
     }
 
 
     override fun onDestroy() {
         super.onDestroy()
-            wm.removeView(imageView)
-            wm.removeView(closeView)
+        wm.removeView(imageView)
+        wm.removeView(closeView)
 
     }
 
