@@ -83,7 +83,7 @@ class OverlayShowingService : Service(), OnTouchListener {
                 null
             )
         )
-        closeView.setOnClickListener { stopSelf() }
+        closeView.setOnClickListener { stopSelf()}
         wm.addView(closeView, params)
 
         val visLP = WindowManager.LayoutParams()
@@ -111,6 +111,7 @@ class OverlayShowingService : Service(), OnTouchListener {
         super.onDestroy()
         wm.removeView(imageView)
         wm.removeView(closeView)
+        wm.removeView(hideView)
 
     }
 
